@@ -1,0 +1,13 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "disabled",
+  "java.import.maven.enabled": true,
+  "maven.executable.preferMavenWrapper": false,
+  "spring-boot.ls.problem.application-properties.enabled": true,
+  "files.exclude": {
+    "**/.classpath": true,
+    "**/.project": true,
+    "**/.settings": true,
+    "**/.factorypath": true
+  }
+}

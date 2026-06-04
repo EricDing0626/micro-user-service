@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug MicroUserApplication",
+      "request": "launch",
+      "mainClass": "com.huawei.micro.MicroUserApplication",
+      "projectName": "micro-user-service"
+    }
+  ]
+}
