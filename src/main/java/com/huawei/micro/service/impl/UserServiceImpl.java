@@ -40,13 +40,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createUser(UserCreateVO createVO) {
-        validateUsername(createVO.getUsername());
+        validateUsernameUnique(createVO.getUsername(), null);
         validatePassword(createVO.getPassword());
-
-        User existUser = userMapper.selectUserByUsername(createVO.getUsername());
-        if (existUser != null) {
-            throw new BusinessException("用户名已存在");
-        }
 
         User user = new User();
         BeanUtils.copyProperties(createVO, user);
@@ -77,6 +72,10 @@ public class UserServiceImpl implements UserService {
     public void updateUser(UserUpdateVO updateVO) {
         User user = validateUserExists(updateVO.getId());
 
+        if (StringUtils.hasText(updateVO.getUsername())) {
+            validateUsernameUnique(updateVO.getUsername(), user.getId());
+            user.setUsername(updateVO.getUsername());
+        }
         if (StringUtils.hasText(updateVO.getPassword())) {
             validatePassword(updateVO.getPassword());
             user.setPassword(Md5Util.encrypt(updateVO.getPassword()));
@@ -102,6 +101,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteUserById(Long id) {
         validateUserExists(id);
+        deleteUserRoles(id);
         userMapper.deleteById(id);
     }
 
@@ -119,6 +119,14 @@ public class UserServiceImpl implements UserService {
     private void validateUsername(String username) {
         if (!StringUtils.hasText(username)) {
             throw new BusinessException("用户名不能为空");
+        }
+    }
+
+    private void validateUsernameUnique(String username, Long excludeUserId) {
+        validateUsername(username);
+        User existUser = userMapper.selectUserByUsername(username);
+        if (existUser != null && !existUser.getId().equals(excludeUserId)) {
+            throw new BusinessException("用户名已存在");
         }
     }
 
@@ -146,8 +154,12 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void replaceUserRoles(Long userId, List<Long> roleIds) {
+    private void deleteUserRoles(Long userId) {
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+    }
+
+    private void replaceUserRoles(Long userId, List<Long> roleIds) {
+        deleteUserRoles(userId);
         assignUserRoles(userId, roleIds);
     }
 

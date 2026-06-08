@@ -18,6 +18,8 @@ public class UserUpdateVO implements Serializable {
     @NotNull(message = "用户ID不能为空")
     private Long id;
 
+    private String username;
+
     @Size(min = 6, max = 20, message = "密码长度必须在6-20位之间")
     private String password;
 
