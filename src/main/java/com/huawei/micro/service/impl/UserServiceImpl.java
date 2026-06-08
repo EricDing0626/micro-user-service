@@ -1,8 +1,13 @@
 package com.huawei.micro.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.huawei.micro.entity.Role;
 import com.huawei.micro.entity.User;
+import com.huawei.micro.entity.UserRole;
 import com.huawei.micro.exception.BusinessException;
+import com.huawei.micro.mapper.RoleMapper;
 import com.huawei.micro.mapper.UserMapper;
+import com.huawei.micro.mapper.UserRoleMapper;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.util.Md5Util;
 import com.huawei.micro.vo.UserCreateVO;
@@ -12,9 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 用户服务实现类
@@ -27,6 +34,8 @@ public class UserServiceImpl implements UserService {
     private static final int MAX_PASSWORD_LENGTH = 20;
 
     private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
+    private final UserRoleMapper userRoleMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -49,6 +58,7 @@ public class UserServiceImpl implements UserService {
         user.setUpdateTime(LocalDateTime.now());
 
         userMapper.insert(user);
+        assignUserRoles(user.getId(), createVO.getRoleIds());
         return user.getId();
     }
 
@@ -83,6 +93,9 @@ public class UserServiceImpl implements UserService {
         user.setUpdateTime(LocalDateTime.now());
 
         userMapper.updateById(user);
+        if (updateVO.getRoleIds() != null) {
+            replaceUserRoles(user.getId(), updateVO.getRoleIds());
+        }
     }
 
     @Override
@@ -115,6 +128,38 @@ public class UserServiceImpl implements UserService {
         }
         if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
             throw new BusinessException("密码长度必须在6-20位之间");
+        }
+    }
+
+    private void assignUserRoles(Long userId, List<Long> roleIds) {
+        if (CollectionUtils.isEmpty(roleIds)) {
+            return;
+        }
+        validateRoleIds(roleIds);
+        LocalDateTime now = LocalDateTime.now();
+        for (Long roleId : roleIds) {
+            UserRole userRole = new UserRole();
+            userRole.setUserId(userId);
+            userRole.setRoleId(roleId);
+            userRole.setCreateTime(now);
+            userRoleMapper.insert(userRole);
+        }
+    }
+
+    private void replaceUserRoles(Long userId, List<Long> roleIds) {
+        userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+        assignUserRoles(userId, roleIds);
+    }
+
+    private void validateRoleIds(List<Long> roleIds) {
+        for (Long roleId : roleIds) {
+            if (roleId == null) {
+                throw new BusinessException("角色ID不能为空");
+            }
+            Role role = roleMapper.selectById(roleId);
+            if (role == null) {
+                throw new BusinessException("角色不存在，ID=" + roleId);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 用户修改请求 VO
@@ -25,4 +26,6 @@ public class UserUpdateVO implements Serializable {
     private String phone;
 
     private Integer status;
+
+    private List<Long> roleIds;
 }
