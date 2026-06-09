@@ -1,6 +1,8 @@
 package com.huawei.micro.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.huawei.micro.config.PageProperties;
 import com.huawei.micro.entity.Role;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.entity.UserRole;
@@ -10,6 +12,7 @@ import com.huawei.micro.mapper.UserMapper;
 import com.huawei.micro.mapper.UserRoleMapper;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.util.Md5Util;
+import com.huawei.micro.vo.PageResultVO;
 import com.huawei.micro.vo.UserCreateVO;
 import com.huawei.micro.vo.UserDetailVO;
 import com.huawei.micro.vo.UserUpdateVO;
@@ -22,6 +25,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户服务实现类
@@ -36,6 +40,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
+    private final PageProperties pageProperties;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -65,6 +70,34 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(user, detailVO);
         detailVO.setRoles(userMapper.selectRoleByUserId(id));
         return detailVO;
+    }
+
+    @Override
+    public PageResultVO<UserDetailVO> listUsers(Integer pageNum, Integer pageSize, String username) {
+        int currentPageNum = normalizePageNum(pageNum);
+        int currentPageSize = normalizePageSize(pageSize);
+
+        Page<User> page = new Page<>(currentPageNum, currentPageSize);
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(username)) {
+            queryWrapper.like(User::getUsername, username);
+        }
+        queryWrapper.orderByDesc(User::getCreateTime);
+
+        Page<User> userPage = userMapper.selectPage(page, queryWrapper);
+        List<UserDetailVO> records = userPage.getRecords().stream().map(user -> {
+            UserDetailVO detailVO = new UserDetailVO();
+            BeanUtils.copyProperties(user, detailVO);
+            return detailVO;
+        }).collect(Collectors.toList());
+
+        PageResultVO<UserDetailVO> pageResult = new PageResultVO<>();
+        pageResult.setRecords(records);
+        pageResult.setTotal(userPage.getTotal());
+        pageResult.setPageNum(userPage.getCurrent());
+        pageResult.setPageSize(userPage.getSize());
+        pageResult.setPages(userPage.getPages());
+        return pageResult;
     }
 
     @Override
@@ -173,5 +206,19 @@ public class UserServiceImpl implements UserService {
                 throw new BusinessException("角色不存在，ID=" + roleId);
             }
         }
+    }
+
+    private int normalizePageNum(Integer pageNum) {
+        if (pageNum == null || pageNum < 1) {
+            return pageProperties.getDefaultPageNum();
+        }
+        return pageNum;
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return pageProperties.getDefaultPageSize();
+        }
+        return Math.min(pageSize, pageProperties.getMaxPageSize());
     }
 }

@@ -2,6 +2,7 @@ package com.huawei.micro.controller;
 
 import com.huawei.micro.common.Result;
 import com.huawei.micro.service.UserService;
+import com.huawei.micro.vo.PageResultVO;
 import com.huawei.micro.vo.UserCreateVO;
 import com.huawei.micro.vo.UserDetailVO;
 import com.huawei.micro.vo.UserUpdateVO;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -33,6 +35,14 @@ public class UserController {
     public Result<Long> createUser(@Valid @RequestBody UserCreateVO createVO) {
         Long userId = userService.createUser(createVO);
         return Result.success("新增用户成功", userId);
+    }
+
+    @GetMapping
+    public Result<PageResultVO<UserDetailVO>> listUsers(
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) String username) {
+        return Result.success(userService.listUsers(pageNum, pageSize, username));
     }
 
     @GetMapping("/{id}")

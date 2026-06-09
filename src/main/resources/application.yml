@@ -31,6 +31,12 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
+app:
+  page:
+    default-page-num: 1
+    default-page-size: 10
+    max-page-size: 100
+
 logging:
   level:
     com.huawei.micro.mapper: debug
