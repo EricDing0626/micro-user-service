@@ -3,6 +3,8 @@ package com.huawei.micro.controller;
 import com.huawei.micro.common.Result;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.vo.PageResultVO;
+import com.huawei.micro.vo.UserBatchDeleteResultVO;
+import com.huawei.micro.vo.UserBatchDeleteVO;
 import com.huawei.micro.vo.UserCreateVO;
 import com.huawei.micro.vo.UserDetailVO;
 import com.huawei.micro.vo.UserUpdateVO;
@@ -56,9 +58,26 @@ public class UserController {
         return Result.success();
     }
 
+    @DeleteMapping("/batch")
+    public Result<UserBatchDeleteResultVO> batchDeleteUsers(@Valid @RequestBody UserBatchDeleteVO batchDeleteVO) {
+        UserBatchDeleteResultVO result = userService.batchDeleteUsers(batchDeleteVO.getIds());
+        String message = buildBatchDeleteMessage(result);
+        return Result.success(message, result);
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> deleteUserById(@PathVariable Long id) {
         userService.deleteUserById(id);
         return Result.success();
+    }
+
+    private String buildBatchDeleteMessage(UserBatchDeleteResultVO result) {
+        if (result.getFailedCount() == 0) {
+            return "批量删除成功";
+        }
+        if (result.getSuccessCount() == 0) {
+            return "批量删除失败，用户均不存在";
+        }
+        return "部分用户删除成功";
     }
 }

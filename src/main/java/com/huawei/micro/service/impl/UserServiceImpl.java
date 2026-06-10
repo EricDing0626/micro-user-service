@@ -13,6 +13,7 @@ import com.huawei.micro.mapper.UserRoleMapper;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.util.Md5Util;
 import com.huawei.micro.vo.PageResultVO;
+import com.huawei.micro.vo.UserBatchDeleteResultVO;
 import com.huawei.micro.vo.UserCreateVO;
 import com.huawei.micro.vo.UserDetailVO;
 import com.huawei.micro.vo.UserUpdateVO;
@@ -134,8 +135,32 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteUserById(Long id) {
         validateUserExists(id);
-        deleteUserRoles(id);
-        userMapper.deleteById(id);
+        doDeleteUser(id);
+    }
+
+    @Override
+    public UserBatchDeleteResultVO batchDeleteUsers(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            throw new BusinessException("用户ID列表不能为空");
+        }
+
+        UserBatchDeleteResultVO result = new UserBatchDeleteResultVO();
+        for (Long id : ids) {
+            if (id == null) {
+                result.getFailedIds().add(null);
+                continue;
+            }
+            if (userMapper.selectById(id) == null) {
+                result.getFailedIds().add(id);
+                continue;
+            }
+            doDeleteUser(id);
+            result.getSuccessIds().add(id);
+        }
+
+        result.setSuccessCount(result.getSuccessIds().size());
+        result.setFailedCount(result.getFailedIds().size());
+        return result;
     }
 
     private User validateUserExists(Long id) {
@@ -185,6 +210,11 @@ public class UserServiceImpl implements UserService {
             userRole.setCreateTime(now);
             userRoleMapper.insert(userRole);
         }
+    }
+
+    private void doDeleteUser(Long userId) {
+        deleteUserRoles(userId);
+        userMapper.deleteById(userId);
     }
 
     private void deleteUserRoles(Long userId) {
