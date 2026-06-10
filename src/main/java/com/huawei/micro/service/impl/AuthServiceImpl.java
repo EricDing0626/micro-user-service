@@ -1,6 +1,7 @@
 package com.huawei.micro.service.impl;
 
 import com.huawei.micro.common.ResultCode;
+import com.huawei.micro.common.ResultCode;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.exception.BusinessException;
 import com.huawei.micro.mapper.UserMapper;
@@ -28,16 +29,16 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponseVO login(LoginVO loginVO) {
         User user = userMapper.selectUserByUsername(loginVO.getUsername());
         if (user == null) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED.getCode(), "用户名或密码错误");
+            throw new BusinessException(ResultCode.UNAUTHORIZED, "用户名或密码错误");
         }
 
         String encryptedPassword = Md5Util.encrypt(loginVO.getPassword());
         if (!encryptedPassword.equals(user.getPassword())) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED.getCode(), "用户名或密码错误");
+            throw new BusinessException(ResultCode.UNAUTHORIZED, "用户名或密码错误");
         }
 
         if (user.getStatus() == null || user.getStatus() != USER_STATUS_ENABLED) {
-            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "用户已被禁用");
+            throw new BusinessException(ResultCode.FORBIDDEN, "用户已被禁用");
         }
 
         String token = tokenStore.generateToken(user.getId());

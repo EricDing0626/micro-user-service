@@ -3,6 +3,7 @@ package com.huawei.micro.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.huawei.micro.config.PageProperties;
+import com.huawei.micro.common.ResultCode;
 import com.huawei.micro.entity.Role;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.entity.UserRole;
@@ -141,7 +142,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserBatchDeleteResultVO batchDeleteUsers(List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) {
-            throw new BusinessException("用户ID列表不能为空");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "用户ID列表不能为空");
         }
 
         UserBatchDeleteResultVO result = new UserBatchDeleteResultVO();
@@ -165,18 +166,18 @@ public class UserServiceImpl implements UserService {
 
     private User validateUserExists(Long id) {
         if (id == null) {
-            throw new BusinessException("用户ID不能为空");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "用户ID不能为空");
         }
         User user = userMapper.selectById(id);
         if (user == null) {
-            throw new BusinessException("用户不存在，ID=" + id);
+            throw new BusinessException(ResultCode.NOT_FOUND, "用户不存在，ID=" + id);
         }
         return user;
     }
 
     private void validateUsername(String username) {
         if (!StringUtils.hasText(username)) {
-            throw new BusinessException("用户名不能为空");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "用户名不能为空");
         }
     }
 
@@ -184,16 +185,16 @@ public class UserServiceImpl implements UserService {
         validateUsername(username);
         User existUser = userMapper.selectUserByUsername(username);
         if (existUser != null && !existUser.getId().equals(excludeUserId)) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "用户名已存在");
         }
     }
 
     private void validatePassword(String password) {
         if (!StringUtils.hasText(password)) {
-            throw new BusinessException("密码不能为空");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "密码不能为空");
         }
         if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
-            throw new BusinessException("密码长度必须在6-20位之间");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "密码长度必须在6-20位之间");
         }
     }
 
@@ -229,11 +230,11 @@ public class UserServiceImpl implements UserService {
     private void validateRoleIds(List<Long> roleIds) {
         for (Long roleId : roleIds) {
             if (roleId == null) {
-                throw new BusinessException("角色ID不能为空");
+                throw new BusinessException(ResultCode.BAD_REQUEST, "角色ID不能为空");
             }
             Role role = roleMapper.selectById(roleId);
             if (role == null) {
-                throw new BusinessException("角色不存在，ID=" + roleId);
+                throw new BusinessException(ResultCode.NOT_FOUND, "角色不存在，ID=" + roleId);
             }
         }
     }
