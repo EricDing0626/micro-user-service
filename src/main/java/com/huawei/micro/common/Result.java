@@ -104,6 +104,19 @@ public class Result<T> implements Serializable {
     }
 
     /**
+     * 返回失败结果（含业务数据）。
+     *
+     * @param code    状态码
+     * @param message 错误信息
+     * @param data    业务数据
+     * @param <T>     业务数据类型
+     * @return 失败结果
+     */
+    public static <T> Result<T> fail(int code, String message, T data) {
+        return new Result<>(code, message, data);
+    }
+
+    /**
      * 返回失败结果。
      *
      * @param resultCode 状态码枚举

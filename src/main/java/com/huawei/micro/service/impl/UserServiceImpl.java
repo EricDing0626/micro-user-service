@@ -114,6 +114,7 @@ public class UserServiceImpl implements UserService {
         List<UserDetailVO> records = userPage.getRecords().stream().map(user -> {
             UserDetailVO detailVO = new UserDetailVO();
             BeanUtils.copyProperties(user, detailVO);
+            detailVO.setRoles(userMapper.selectRoleByUserId(user.getId()));
             return detailVO;
         }).collect(Collectors.toList());
 
@@ -188,8 +189,7 @@ public class UserServiceImpl implements UserService {
         UserBatchDeleteResultVO result = new UserBatchDeleteResultVO();
         for (Long id : ids) {
             if (id == null) {
-                result.getFailedIds().add(null);
-                continue;
+                throw new BusinessException(ResultCode.BAD_REQUEST, "用户ID不能为空");
             }
             if (userMapper.selectById(id) == null) {
                 result.getFailedIds().add(id);

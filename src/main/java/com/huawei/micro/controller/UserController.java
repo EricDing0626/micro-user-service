@@ -1,6 +1,7 @@
 package com.huawei.micro.controller;
 
 import com.huawei.micro.common.Result;
+import com.huawei.micro.common.ResultCode;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.vo.PageResultVO;
 import com.huawei.micro.vo.UserBatchDeleteResultVO;
@@ -96,8 +97,13 @@ public class UserController {
     @DeleteMapping("/batch")
     public Result<UserBatchDeleteResultVO> batchDeleteUsers(@Valid @RequestBody UserBatchDeleteVO batchDeleteVO) {
         UserBatchDeleteResultVO result = userService.batchDeleteUsers(batchDeleteVO.getIds());
-        String message = buildBatchDeleteMessage(result);
-        return Result.success(message, result);
+        if (result.getSuccessCount() == 0) {
+            return Result.fail(ResultCode.NOT_FOUND.getCode(), "批量删除失败，用户均不存在", result);
+        }
+        if (result.getFailedCount() > 0) {
+            return Result.success("部分用户删除成功", result);
+        }
+        return Result.success("批量删除成功", result);
     }
 
     /**
@@ -110,21 +116,5 @@ public class UserController {
     public Result<Void> deleteUserById(@PathVariable Long id) {
         userService.deleteUserById(id);
         return Result.success();
-    }
-
-    /**
-     * 构建批量删除提示信息。
-     *
-     * @param result 批量删除结果
-     * @return 提示信息
-     */
-    private String buildBatchDeleteMessage(UserBatchDeleteResultVO result) {
-        if (result.getFailedCount() == 0) {
-            return "批量删除成功";
-        }
-        if (result.getSuccessCount() == 0) {
-            return "批量删除失败，用户均不存在";
-        }
-        return "部分用户删除成功";
     }
 }

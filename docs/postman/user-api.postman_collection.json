@@ -253,6 +253,7 @@
                 "exec": [
                   "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
                   "var json = pm.response.json();",
+                  "pm.test('全部不存在时业务码404', function () { pm.expect(json.code).to.eql(404); });",
                   "pm.test('返回批量结果', function () {",
                   "  pm.expect(json.data).to.have.property('successCount');",
                   "  pm.expect(json.data).to.have.property('failedIds');",
