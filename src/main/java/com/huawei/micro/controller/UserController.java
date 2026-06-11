@@ -23,7 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.Valid;
 
 /**
- * 用户管理 REST 接口
+ * 用户管理 REST 接口。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 @RestController
 @RequestMapping("/api/users")
@@ -33,12 +36,26 @@ public class UserController {
 
     private final UserService userService;
 
+    /**
+     * 新增用户。
+     *
+     * @param createVO 用户新增参数
+     * @return 新用户 ID
+     */
     @PostMapping
     public Result<Long> createUser(@Valid @RequestBody UserCreateVO createVO) {
         Long userId = userService.createUser(createVO);
         return Result.success("新增用户成功", userId);
     }
 
+    /**
+     * 分页查询用户列表。
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页条数
+     * @param username 用户名（模糊匹配）
+     * @return 分页用户列表
+     */
     @GetMapping
     public Result<PageResultVO<UserDetailVO>> listUsers(
             @RequestParam(required = false) Integer pageNum,
@@ -47,17 +64,35 @@ public class UserController {
         return Result.success(userService.listUsers(pageNum, pageSize, username));
     }
 
+    /**
+     * 根据 ID 查询用户详情。
+     *
+     * @param id 用户 ID
+     * @return 用户详情
+     */
     @GetMapping("/{id}")
     public Result<UserDetailVO> getUserById(@PathVariable Long id) {
         return Result.success(userService.getUserById(id));
     }
 
+    /**
+     * 修改用户信息。
+     *
+     * @param updateVO 用户修改参数
+     * @return 操作结果
+     */
     @PutMapping
     public Result<Void> updateUser(@Valid @RequestBody UserUpdateVO updateVO) {
         userService.updateUser(updateVO);
         return Result.success();
     }
 
+    /**
+     * 批量删除用户。
+     *
+     * @param batchDeleteVO 批量删除参数
+     * @return 批量删除结果
+     */
     @DeleteMapping("/batch")
     public Result<UserBatchDeleteResultVO> batchDeleteUsers(@Valid @RequestBody UserBatchDeleteVO batchDeleteVO) {
         UserBatchDeleteResultVO result = userService.batchDeleteUsers(batchDeleteVO.getIds());
@@ -65,12 +100,24 @@ public class UserController {
         return Result.success(message, result);
     }
 
+    /**
+     * 根据 ID 删除用户。
+     *
+     * @param id 用户 ID
+     * @return 操作结果
+     */
     @DeleteMapping("/{id}")
     public Result<Void> deleteUserById(@PathVariable Long id) {
         userService.deleteUserById(id);
         return Result.success();
     }
 
+    /**
+     * 构建批量删除提示信息。
+     *
+     * @param result 批量删除结果
+     * @return 提示信息
+     */
     private String buildBatchDeleteMessage(UserBatchDeleteResultVO result) {
         if (result.getFailedCount() == 0) {
             return "批量删除成功";

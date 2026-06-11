@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.Valid;
 
 /**
- * 认证 REST 接口
+ * 认证 REST 接口。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -24,6 +27,12 @@ public class AuthController {
 
     private final AuthService authService;
 
+    /**
+     * 用户登录。
+     *
+     * @param loginVO 登录参数
+     * @return 登录结果（含 token）
+     */
     @PostMapping("/login")
     public Result<LoginResponseVO> login(@Valid @RequestBody LoginVO loginVO) {
         LoginResponseVO responseVO = authService.login(loginVO);

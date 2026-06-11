@@ -5,11 +5,22 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+/**
+ * 用户管理微服务启动类。
+ *
+ * @author Eric
+ * @since 1.0.0
+ */
 @SpringBootApplication
 @MapperScan("com.huawei.micro.mapper")
 @EnableTransactionManagement
 public class MicroUserApplication {
 
+    /**
+     * 应用入口。
+     *
+     * @param args 启动参数
+     */
     public static void main(String[] args) {
         SpringApplication.run(MicroUserApplication.class, args);
     }

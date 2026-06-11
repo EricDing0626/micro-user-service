@@ -8,11 +8,26 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 用户 Mapper
+ * 用户数据访问接口。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 public interface UserMapper extends BaseMapper<User> {
 
+    /**
+     * 根据用户名查询用户。
+     *
+     * @param username 用户名
+     * @return 用户实体
+     */
     User selectUserByUsername(@Param("username") String username);
 
+    /**
+     * 根据用户 ID 查询关联角色列表。
+     *
+     * @param userId 用户 ID
+     * @return 角色列表
+     */
     List<Role> selectRoleByUserId(@Param("userId") Long userId);
 }

@@ -2,8 +2,8 @@ package com.huawei.micro.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.huawei.micro.config.PageProperties;
 import com.huawei.micro.common.ResultCode;
+import com.huawei.micro.config.PageProperties;
 import com.huawei.micro.entity.Role;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.entity.UserRole;
@@ -30,7 +30,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 用户服务实现类
+ * 用户业务服务实现类。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 @Service
 @RequiredArgsConstructor
@@ -38,12 +41,19 @@ public class UserServiceImpl implements UserService {
 
     private static final int MIN_PASSWORD_LENGTH = 6;
     private static final int MAX_PASSWORD_LENGTH = 20;
+    private static final int USER_STATUS_ENABLED = 1;
 
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final PageProperties pageProperties;
 
+    /**
+     * 新增用户并分配角色。
+     *
+     * @param createVO 用户新增参数
+     * @return 新用户 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createUser(UserCreateVO createVO) {
@@ -54,7 +64,7 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(createVO, user);
         user.setPassword(Md5Util.encrypt(createVO.getPassword()));
         if (user.getStatus() == null) {
-            user.setStatus(1);
+            user.setStatus(USER_STATUS_ENABLED);
         }
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
@@ -64,6 +74,12 @@ public class UserServiceImpl implements UserService {
         return user.getId();
     }
 
+    /**
+     * 根据 ID 查询用户详情（含角色）。
+     *
+     * @param id 用户 ID
+     * @return 用户详情
+     */
     @Override
     public UserDetailVO getUserById(Long id) {
         User user = validateUserExists(id);
@@ -74,6 +90,14 @@ public class UserServiceImpl implements UserService {
         return detailVO;
     }
 
+    /**
+     * 分页查询用户列表，支持用户名模糊搜索。
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页条数
+     * @param username 用户名（模糊匹配）
+     * @return 分页结果
+     */
     @Override
     public PageResultVO<UserDetailVO> listUsers(Integer pageNum, Integer pageSize, String username) {
         int currentPageNum = normalizePageNum(pageNum);
@@ -102,6 +126,11 @@ public class UserServiceImpl implements UserService {
         return pageResult;
     }
 
+    /**
+     * 修改用户信息及角色。
+     *
+     * @param updateVO 用户修改参数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateUser(UserUpdateVO updateVO) {
@@ -132,6 +161,11 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 删除用户并级联删除角色关联。
+     *
+     * @param id 用户 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUserById(Long id) {
@@ -139,6 +173,12 @@ public class UserServiceImpl implements UserService {
         doDeleteUser(id);
     }
 
+    /**
+     * 批量删除用户，部分不存在时不影响其他用户删除。
+     *
+     * @param ids 用户 ID 列表
+     * @return 批量删除结果
+     */
     @Override
     public UserBatchDeleteResultVO batchDeleteUsers(List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) {
@@ -164,6 +204,12 @@ public class UserServiceImpl implements UserService {
         return result;
     }
 
+    /**
+     * 校验用户是否存在。
+     *
+     * @param id 用户 ID
+     * @return 用户实体
+     */
     private User validateUserExists(Long id) {
         if (id == null) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "用户ID不能为空");
@@ -175,12 +221,23 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 校验用户名非空。
+     *
+     * @param username 用户名
+     */
     private void validateUsername(String username) {
         if (!StringUtils.hasText(username)) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "用户名不能为空");
         }
     }
 
+    /**
+     * 校验用户名唯一性。
+     *
+     * @param username      用户名
+     * @param excludeUserId 排除的用户 ID（修改场景）
+     */
     private void validateUsernameUnique(String username, Long excludeUserId) {
         validateUsername(username);
         User existUser = userMapper.selectUserByUsername(username);
@@ -189,6 +246,11 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 校验密码格式。
+     *
+     * @param password 明文密码
+     */
     private void validatePassword(String password) {
         if (!StringUtils.hasText(password)) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "密码不能为空");
@@ -198,6 +260,12 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 为用户分配角色。
+     *
+     * @param userId  用户 ID
+     * @param roleIds 角色 ID 列表
+     */
     private void assignUserRoles(Long userId, List<Long> roleIds) {
         if (CollectionUtils.isEmpty(roleIds)) {
             return;
@@ -213,20 +281,41 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 删除用户及其角色关联。
+     *
+     * @param userId 用户 ID
+     */
     private void doDeleteUser(Long userId) {
         deleteUserRoles(userId);
         userMapper.deleteById(userId);
     }
 
+    /**
+     * 删除用户角色关联。
+     *
+     * @param userId 用户 ID
+     */
     private void deleteUserRoles(Long userId) {
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
     }
 
+    /**
+     * 替换用户角色关联。
+     *
+     * @param userId  用户 ID
+     * @param roleIds 角色 ID 列表
+     */
     private void replaceUserRoles(Long userId, List<Long> roleIds) {
         deleteUserRoles(userId);
         assignUserRoles(userId, roleIds);
     }
 
+    /**
+     * 校验角色 ID 列表有效性。
+     *
+     * @param roleIds 角色 ID 列表
+     */
     private void validateRoleIds(List<Long> roleIds) {
         for (Long roleId : roleIds) {
             if (roleId == null) {
@@ -239,6 +328,12 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * 规范化页码。
+     *
+     * @param pageNum 页码
+     * @return 有效页码
+     */
     private int normalizePageNum(Integer pageNum) {
         if (pageNum == null || pageNum < 1) {
             return pageProperties.getDefaultPageNum();
@@ -246,6 +341,12 @@ public class UserServiceImpl implements UserService {
         return pageNum;
     }
 
+    /**
+     * 规范化每页条数。
+     *
+     * @param pageSize 每页条数
+     * @return 有效每页条数
+     */
     private int normalizePageSize(Integer pageSize) {
         if (pageSize == null || pageSize < 1) {
             return pageProperties.getDefaultPageSize();

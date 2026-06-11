@@ -1,7 +1,6 @@
 package com.huawei.micro.service.impl;
 
 import com.huawei.micro.common.ResultCode;
-import com.huawei.micro.common.ResultCode;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.exception.BusinessException;
 import com.huawei.micro.mapper.UserMapper;
@@ -14,7 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 认证服务实现类
+ * 认证业务服务实现类。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,12 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final TokenStore tokenStore;
 
+    /**
+     * 校验用户名与密码，通过后生成 token。
+     *
+     * @param loginVO 登录参数
+     * @return 登录结果
+     */
     @Override
     public LoginResponseVO login(LoginVO loginVO) {
         User user = userMapper.selectUserByUsername(loginVO.getUsername());

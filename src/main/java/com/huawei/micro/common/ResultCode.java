@@ -1,7 +1,10 @@
 package com.huawei.micro.common;
 
 /**
- * 统一状态码定义
+ * 统一业务状态码定义。
+ *
+ * @author Eric
+ * @since 1.0.0
  */
 public enum ResultCode {
 
@@ -20,10 +23,20 @@ public enum ResultCode {
         this.message = message;
     }
 
+    /**
+     * 获取状态码。
+     *
+     * @return 状态码
+     */
     public int getCode() {
         return code;
     }
 
+    /**
+     * 获取提示信息。
+     *
+     * @return 提示信息
+     */
     public String getMessage() {
         return message;
     }
