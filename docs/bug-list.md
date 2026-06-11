@@ -1,0 +1,70 @@
+# 用户管理模块 Bug 清单
+
+> 测试人员：Eric  
+> 测试时间：2026-06-08  
+> 测试工具：Postman（集合见 `docs/postman/user-api.postman_collection.json`）
+
+## 一、测试范围
+
+| 模块 | 接口 | 是否覆盖 |
+|------|------|----------|
+| 认证 | POST /api/auth/login | ✅ |
+| 用户 | POST /api/users | ✅ |
+| 用户 | GET /api/users | ✅ |
+| 用户 | GET /api/users/{id} | ✅ |
+| 用户 | PUT /api/users | ✅ |
+| 用户 | DELETE /api/users/{id} | ✅ |
+| 用户 | DELETE /api/users/batch | ✅ |
+
+## 二、边界测试用例
+
+| 编号 | 场景 | 预期结果 | 实际结果 |
+|------|------|----------|----------|
+| B01 | 登录密码错误 | code=401 | 通过 |
+| B02 | 登录用户名为空 | code=400 | 通过 |
+| B03 | 未携带 token 访问接口 | HTTP 401 | 通过 |
+| B04 | 无效 token 访问接口 | HTTP 401 | 通过 |
+| B05 | 新增用户名重复 | code=400 | 通过 |
+| B06 | 新增密码长度不足 | code=400 | 通过 |
+| B07 | 查询不存在用户 | code=404 | 通过 |
+| B08 | 修改用户名为已存在用户名 | code=400 | 通过 |
+| B09 | 删除不存在用户 | code=404 | 通过 |
+| B10 | 批量删除含不存在 ID | 部分成功，返回 failedIds | 通过 |
+| B11 | 批量删除空列表 | code=400 | 通过 |
+
+## 三、Bug 清单（按优先级）
+
+### P0 — 阻塞级
+
+| ID | 描述 | 复现步骤 | 状态 |
+|----|------|----------|------|
+| — | 暂无 | — | — |
+
+### P1 — 高优先级
+
+| ID | 描述 | 复现步骤 | 建议修复 | 状态 |
+|----|------|----------|----------|------|
+| BUG-001 | 数据库无默认测试用户，首次无法登录测试 | 1. 执行 init.sql<br>2. 直接 Postman 登录 testadmin | 在 init.sql 增加测试用户初始化数据 | 已修复 |
+| BUG-002 | 批量删除全部失败时，响应 code 仍为 200 | 1. 登录获取 token<br>2. DELETE /api/users/batch body: `{"ids":[99998,99999]}` | 全部失败时返回非 200 业务码，或单独定义业务状态 | 待修复 |
+
+### P2 — 中优先级
+
+| ID | 描述 | 复现步骤 | 建议修复 | 状态 |
+|----|------|----------|----------|------|
+| BUG-003 | Token 存储在内存，服务重启后全部失效 | 1. 登录获取 token<br>2. 重启服务<br>3. 带原 token 访问 | 文档说明；后续可接入 Redis | 待修复 |
+| BUG-004 | 业务错误 HTTP 状态码均为 200，仅靠 body.code 区分 | 调用任意返回 404/400 的接口，查看 HTTP Status | 统一映射 HTTP 状态码，或文档明确约定 | 待修复 |
+| BUG-005 | 批量删除 ids 含 null 时，failedIds 会出现 null 元素 | DELETE /api/users/batch body: `{"ids":[null,1]}` | 跳过 null 或返回明确参数错误 | 待修复 |
+
+### P3 — 低优先级
+
+| ID | 描述 | 复现步骤 | 建议修复 | 状态 |
+|----|------|----------|----------|------|
+| BUG-006 | 分页列表不返回用户角色信息 | GET /api/users 对比 GET /api/users/{id} | 列表接口按需补充 roles 字段 | 待修复 |
+
+## 四、Postman 使用说明
+
+1. 执行 `sql/init.sql` 初始化数据库（已含测试用户 testadmin / 123456）
+2. 导入 `docs/postman/user-api.postman_collection.json`
+3. 导入 `docs/postman/local.postman_environment.json`
+4. 运行 **01-认证 → 登录-成功**，自动保存 token
+5. 使用 Collection Runner 运行全量用例

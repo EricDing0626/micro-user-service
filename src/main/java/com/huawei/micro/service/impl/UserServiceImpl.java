@@ -240,8 +240,7 @@ public class UserServiceImpl implements UserService {
      */
     private void validateUsernameUnique(String username, Long excludeUserId) {
         validateUsername(username);
-        User existUser = userMapper.selectUserByUsername(username);
-        if (existUser != null && !existUser.getId().equals(excludeUserId)) {
+        if (userMapper.countByUsername(username, excludeUserId) > 0) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "用户名已存在");
         }
     }

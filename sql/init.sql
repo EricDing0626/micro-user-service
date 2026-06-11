@@ -42,9 +42,19 @@ CREATE TABLE IF NOT EXISTS sys_user_role (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
 
 -- 初始化角色数据
-INSERT INTO sys_role (role_name, role_code, description) VALUES
+INSERT IGNORE INTO sys_role (role_name, role_code, description) VALUES
 ('管理员', 'ADMIN', '系统管理员'),
 ('普通用户', 'USER', '普通业务用户');
+
+-- 初始化测试用户（Postman 登录：testadmin / 123456）
+INSERT IGNORE INTO sys_user (username, password, email, status)
+VALUES ('testadmin', MD5('123456'), 'admin@example.com', 1);
+
+INSERT IGNORE INTO sys_user_role (user_id, role_id)
+SELECT u.id, 1
+FROM sys_user u
+WHERE u.username = 'testadmin'
+  AND u.deleted = 0;
 
 -- ============================================================
 -- Navicat 测试用自定义 SQL（对应 Mapper 中的 selectUserByUsername / selectRoleByUserId）

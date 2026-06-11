@@ -3,6 +3,8 @@ package com.huawei.micro.exception;
 import com.huawei.micro.common.Result;
 import com.huawei.micro.common.ResultCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -66,6 +68,43 @@ public class GlobalExceptionHandler {
     public Result<Void> handleConstraintViolationException(ConstraintViolationException e) {
         log.warn("约束校验异常: {}", e.getMessage());
         return Result.fail(ResultCode.BAD_REQUEST.getCode(), e.getMessage());
+    }
+
+    /**
+     * 处理数据库唯一键冲突。
+     *
+     * @param e 唯一键冲突异常
+     * @return 统一错误响应
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
+        log.warn("唯一键冲突: {}", e.getMessage());
+        return Result.fail(ResultCode.BAD_REQUEST.getCode(), resolveDuplicateMessage(e.getMessage()));
+    }
+
+    /**
+     * 处理数据库完整性异常。
+     *
+     * @param e 数据完整性异常
+     * @return 统一错误响应
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public Result<Void> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.warn("数据完整性异常: {}", e.getMessage());
+        return Result.fail(ResultCode.BAD_REQUEST.getCode(), resolveDuplicateMessage(e.getMessage()));
+    }
+
+    /**
+     * 解析唯一键冲突提示信息。
+     *
+     * @param message 异常信息
+     * @return 提示信息
+     */
+    private String resolveDuplicateMessage(String message) {
+        if (message != null && message.contains("uk_username")) {
+            return "用户名已存在";
+        }
+        return "数据已存在，请检查输入";
     }
 
     /**

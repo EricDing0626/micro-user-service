@@ -33,6 +33,16 @@
         LIMIT 1
     </select>
 
+    <!-- 统计用户名数量（含逻辑删除用户，用于唯一性校验） -->
+    <select id="countByUsername" resultType="int">
+        SELECT COUNT(1)
+        FROM sys_user
+        WHERE username = #{username}
+        <if test="excludeUserId != null">
+            AND id != #{excludeUserId}
+        </if>
+    </select>
+
     <!-- 根据用户 ID 查询关联角色 -->
     <select id="selectRoleByUserId" resultMap="RoleResultMap">
         SELECT r.id, r.role_name, r.role_code, r.description, r.deleted, r.create_time, r.update_time

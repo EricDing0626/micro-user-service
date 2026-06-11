@@ -1,63 +1,465 @@
 {
   "info": {
-    "name": "用户管理接口",
-    "description": "micro-user-service 用户 CRUD 接口测试集合",
+    "name": "用户管理模块-全量测试",
+    "description": "micro-user-service 全量接口测试集合，含登录、CRUD、分页、批量删除及边界场景。\\n\\n使用步骤：\\n1. 导入 local.postman_environment.json 环境\\n2. 确保数据库已有可登录用户（或先执行 init.sql 中的测试用户插入语句）\\n3. 先执行「01-登录成功」获取 token\\n4. 再执行其余接口",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": "1"
     }
   ],
   "item": [
     {
-      "name": "新增用户",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+      "name": "01-认证",
+      "item": [
+        {
+          "name": "登录-成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('返回 token', function () { pm.expect(json.data.token).to.be.a('string'); });",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.environment.set('token', json.data.token);",
+                  "if (json.data.userId) {",
+                  "  pm.collectionVariables.set('userId', json.data.userId);",
+                  "  pm.environment.set('userId', json.data.userId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"username\": \"zhangsan\",\n  \"password\": \"123456\",\n  \"email\": \"zhangsan@example.com\",\n  \"phone\": \"13800138000\",\n  \"status\": 1\n}"
         },
-        "url": "{{baseUrl}}/api/users"
-      }
-    },
-    {
-      "name": "根据ID查询用户",
-      "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/api/users/1"
-      }
-    },
-    {
-      "name": "修改用户",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
+        {
+          "name": "登录-密码错误",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 401', function () { pm.expect(json.code).to.eql(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"wrongpass\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
           }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"id\": 1,\n  \"password\": \"654321\",\n  \"email\": \"zhangsan_new@example.com\",\n  \"phone\": \"13900139000\",\n  \"status\": 1\n}"
         },
-        "url": "{{baseUrl}}/api/users"
-      }
+        {
+          "name": "登录-用户名为空",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "未登录访问用户列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 401', function () { pm.expect(json.code).to.eql(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users"
+          }
+        }
+      ]
     },
     {
-      "name": "根据ID删除用户",
-      "request": {
-        "method": "DELETE",
-        "url": "{{baseUrl}}/api/users/1"
-      }
+      "name": "02-用户管理-正常流程",
+      "item": [
+        {
+          "name": "新增用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('新增成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "if (json.data) { pm.collectionVariables.set('userId', json.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"zhangsan\",\n  \"password\": \"123456\",\n  \"email\": \"zhangsan@example.com\",\n  \"phone\": \"13800138000\",\n  \"status\": 1,\n  \"roleIds\": [2]\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "分页查询用户列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('包含分页字段', function () {",
+                  "  pm.expect(json.data).to.have.property('records');",
+                  "  pm.expect(json.data).to.have.property('total');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users?pageNum=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"],
+              "query": [
+                { "key": "pageNum", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "分页查询-用户名模糊",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users?pageNum=1&pageSize=10&username=zhang",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"],
+              "query": [
+                { "key": "pageNum", "value": "1" },
+                { "key": "pageSize", "value": "10" },
+                { "key": "username", "value": "zhang" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "根据ID查询用户",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "修改用户",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{userId}},\n  \"email\": \"zhangsan_new@example.com\",\n  \"phone\": \"13900139000\",\n  \"status\": 1,\n  \"roleIds\": [1, 2]\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "根据ID删除用户",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "批量删除用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('返回批量结果', function () {",
+                  "  pm.expect(json.data).to.have.property('successCount');",
+                  "  pm.expect(json.data).to.have.property('failedIds');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [998, 999]\n}"
+            },
+            "url": "{{baseUrl}}/api/users/batch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03-边界场景",
+      "item": [
+        {
+          "name": "新增用户-用户名重复",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "新增用户-密码过短",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"shortpwd_user\",\n  \"password\": \"123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "查询用户-不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 404', function () { pm.expect(json.code).to.eql(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/99999"
+          }
+        },
+        {
+          "name": "修改用户-用户名重复",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 2,\n  \"username\": \"testadmin\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "删除用户-不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 404', function () { pm.expect(json.code).to.eql(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/users/99999"
+          }
+        },
+        {
+          "name": "批量删除-部分不存在",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('部分成功提示', function () {",
+                  "  pm.expect(json.message).to.include('部分');",
+                  "  pm.expect(json.data.failedCount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [1, 99998, 99999]\n}"
+            },
+            "url": "{{baseUrl}}/api/users/batch"
+          }
+        },
+        {
+          "name": "批量删除-空列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/users/batch"
+          }
+        },
+        {
+          "name": "无效token访问",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "invalid-token-12345", "type": "string" }]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users"
+          }
+        }
+      ]
     }
   ]
 }
