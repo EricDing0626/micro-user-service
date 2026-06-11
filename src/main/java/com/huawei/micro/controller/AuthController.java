@@ -4,6 +4,8 @@ import com.huawei.micro.common.Result;
 import com.huawei.micro.service.AuthService;
 import com.huawei.micro.vo.LoginResponseVO;
 import com.huawei.micro.vo.LoginVO;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,7 @@ import javax.validation.Valid;
  * @author Eric
  * @since 1.0.0
  */
+@Api(tags = "认证管理")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -33,6 +36,7 @@ public class AuthController {
      * @param loginVO 登录参数
      * @return 登录结果（含 token）
      */
+    @ApiOperation(value = "用户登录", notes = "校验用户名密码，成功后返回 token")
     @PostMapping("/login")
     public Result<LoginResponseVO> login(@Valid @RequestBody LoginVO loginVO) {
         LoginResponseVO responseVO = authService.login(loginVO);

@@ -83,11 +83,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDetailVO getUserById(Long id) {
         User user = validateUserExists(id);
-
-        UserDetailVO detailVO = new UserDetailVO();
-        BeanUtils.copyProperties(user, detailVO);
-        detailVO.setRoles(userMapper.selectRoleByUserId(id));
-        return detailVO;
+        return convertToUserDetailVO(user);
     }
 
     /**
@@ -111,20 +107,10 @@ public class UserServiceImpl implements UserService {
         queryWrapper.orderByDesc(User::getCreateTime);
 
         Page<User> userPage = userMapper.selectPage(page, queryWrapper);
-        List<UserDetailVO> records = userPage.getRecords().stream().map(user -> {
-            UserDetailVO detailVO = new UserDetailVO();
-            BeanUtils.copyProperties(user, detailVO);
-            detailVO.setRoles(userMapper.selectRoleByUserId(user.getId()));
-            return detailVO;
-        }).collect(Collectors.toList());
-
-        PageResultVO<UserDetailVO> pageResult = new PageResultVO<>();
-        pageResult.setRecords(records);
-        pageResult.setTotal(userPage.getTotal());
-        pageResult.setPageNum(userPage.getCurrent());
-        pageResult.setPageSize(userPage.getSize());
-        pageResult.setPages(userPage.getPages());
-        return pageResult;
+        List<UserDetailVO> records = userPage.getRecords().stream()
+                .map(this::convertToUserDetailVO)
+                .collect(Collectors.toList());
+        return buildPageResult(userPage, records);
     }
 
     /**
@@ -351,5 +337,35 @@ public class UserServiceImpl implements UserService {
             return pageProperties.getDefaultPageSize();
         }
         return Math.min(pageSize, pageProperties.getMaxPageSize());
+    }
+
+    /**
+     * 转换用户实体为详情 VO。
+     *
+     * @param user 用户实体
+     * @return 用户详情
+     */
+    private UserDetailVO convertToUserDetailVO(User user) {
+        UserDetailVO detailVO = new UserDetailVO();
+        BeanUtils.copyProperties(user, detailVO);
+        detailVO.setRoles(userMapper.selectRoleByUserId(user.getId()));
+        return detailVO;
+    }
+
+    /**
+     * 构建分页结果。
+     *
+     * @param userPage 分页查询结果
+     * @param records  记录列表
+     * @return 分页 VO
+     */
+    private PageResultVO<UserDetailVO> buildPageResult(Page<User> userPage, List<UserDetailVO> records) {
+        PageResultVO<UserDetailVO> pageResult = new PageResultVO<>();
+        pageResult.setRecords(records);
+        pageResult.setTotal(userPage.getTotal());
+        pageResult.setPageNum(userPage.getCurrent());
+        pageResult.setPageSize(userPage.getSize());
+        pageResult.setPages(userPage.getPages());
+        return pageResult;
     }
 }
