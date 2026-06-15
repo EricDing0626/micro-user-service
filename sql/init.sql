@@ -56,6 +56,44 @@ FROM sys_user u
 WHERE u.username = 'testadmin'
   AND u.deleted = 0;
 
+-- 操作日志表
+CREATE TABLE IF NOT EXISTS sys_operate_log (
+    id              BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    operator        VARCHAR(50)   NOT NULL COMMENT '操作人(用户名)',
+    operate_time    DATETIME      NOT NULL COMMENT '操作时间',
+    request_path    VARCHAR(200)  NOT NULL COMMENT '接口路径',
+    request_method  VARCHAR(10)   NOT NULL COMMENT '请求方法',
+    request_params  TEXT                   COMMENT '请求参数(JSON)',
+    response_result TEXT                   COMMENT '响应结果(JSON)',
+    create_time     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_operate_time (operate_time),
+    KEY idx_operator (operator)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
+
+-- 基础数据表
+CREATE TABLE IF NOT EXISTS sys_base_data (
+    id          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    type_code   VARCHAR(50)  NOT NULL COMMENT '数据类型编码',
+    data_code   VARCHAR(50)  NOT NULL COMMENT '数据编码',
+    data_name   VARCHAR(100) NOT NULL COMMENT '数据名称',
+    sort        INT          NOT NULL DEFAULT 0 COMMENT '排序号',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态: 0-禁用 1-启用',
+    deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0-未删除 1-已删除',
+    create_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_type_data (type_code, data_code),
+    KEY idx_type_code (type_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='基础数据表';
+
+-- 初始化基础数据
+INSERT IGNORE INTO sys_base_data (type_code, data_code, data_name, sort, status) VALUES
+('user_status', '0', '禁用', 1, 1),
+('user_status', '1', '启用', 2, 1),
+('role_type', 'ADMIN', '管理员', 1, 1),
+('role_type', 'USER', '普通用户', 2, 1);
+
 -- ============================================================
 -- Navicat 测试用自定义 SQL（对应 Mapper 中的 selectUserByUsername / selectRoleByUserId）
 -- ============================================================
