@@ -6,7 +6,7 @@ import com.huawei.micro.vo.LoginVO;
 /**
  * 认证业务服务接口。
  *
- * @author Eric
+ * @author developer
  * @since 1.0.0
  */
 public interface AuthService {

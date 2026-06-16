@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 用户批量删除结果 VO。
  *
- * @author Eric
+ * @author developer
  * @since 1.0.0
  */
 @Data

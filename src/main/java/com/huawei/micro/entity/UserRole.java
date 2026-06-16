@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 /**
  * 用户角色关联实体，对应 sys_user_role 表。
  *
- * @author Eric
+ * @author developer
  * @since 1.0.0
  */
 @Data

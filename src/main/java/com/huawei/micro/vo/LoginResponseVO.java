@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 用户登录响应 VO。
  *
- * @author Eric
+ * @author developer
  * @since 1.0.0
  */
 @Data
