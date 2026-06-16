@@ -15,6 +15,8 @@
 | 用户 | PUT /api/users | ✅ |
 | 用户 | DELETE /api/users/{id} | ✅ |
 | 用户 | DELETE /api/users/batch | ✅ |
+| AOP | 用户接口触发自动写日志 | 见 `docs/aop-test.md` |
+| 操作日志 | GET /api/operate-logs/{id} | 见 `docs/aop-test.md` |
 
 ## 二、边界测试用例
 

@@ -26,6 +26,10 @@
     {
       "key": "userId",
       "value": "1"
+    },
+    {
+      "key": "operateLogId",
+      "value": "1"
     }
   ],
   "item": [
@@ -458,6 +462,117 @@
             },
             "method": "GET",
             "url": "{{baseUrl}}/api/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04-AOP操作日志验证",
+      "description": "验证调用用户接口后 sys_operate_log 是否自动生成。步骤 2 执行后，请在终端运行：\\nSELECT id FROM sys_operate_log ORDER BY id DESC LIMIT 1;\\n将结果填入环境变量 operateLogId，再执行步骤 3。",
+      "item": [
+        {
+          "name": "01-登录-成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.environment.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "02-查询用户-触发AOP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询用户成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('提示', function () {",
+                  "  console.log('请在 MySQL 执行: SELECT id FROM sys_operate_log ORDER BY id DESC LIMIT 1;');",
+                  "  console.log('将 id 填入环境变量 operateLogId 后执行下一条请求');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "03-查询操作日志-验证AOP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询日志成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('操作人为 testadmin', function () { pm.expect(json.data.operator).to.eql('testadmin'); });",
+                  "pm.test('请求路径含 users', function () { pm.expect(json.data.requestPath).to.include('/api/users'); });",
+                  "pm.test('请求方法为 GET', function () { pm.expect(json.data.requestMethod).to.eql('GET'); });",
+                  "pm.test('含响应结果', function () { pm.expect(json.data.responseResult).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/operate-logs/{{operateLogId}}"
+          }
+        },
+        {
+          "name": "04-登录接口-验证AOP记录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('提示', function () {",
+                  "  console.log('登录接口也会写日志，operator 应为 testadmin');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
           }
         }
       ]
