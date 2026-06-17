@@ -11,6 +11,8 @@ import com.huawei.micro.vo.BaseDataDetailVO;
 import com.huawei.micro.vo.BaseDataUpdateVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,6 +31,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BaseDataServiceImpl implements BaseDataService {
 
+    /** 按类型查询基础数据的缓存名称。 */
+    private static final String CACHE_BASE_DATA_BY_TYPE = "baseDataByType";
+
     private static final int DEFAULT_SORT = 0;
     private static final int STATUS_ENABLED = 1;
 
@@ -41,6 +46,7 @@ public class BaseDataServiceImpl implements BaseDataService {
      * @return 新记录 ID
      */
     @Override
+    @CacheEvict(cacheNames = CACHE_BASE_DATA_BY_TYPE, key = "#createVO.typeCode")
     @Transactional(rollbackFor = Exception.class)
     public Long createBaseData(BaseDataCreateVO createVO) {
         validateTypeDataUnique(createVO.getTypeCode(), createVO.getDataCode(), null);
@@ -66,6 +72,7 @@ public class BaseDataServiceImpl implements BaseDataService {
      * @param updateVO 修改参数
      */
     @Override
+    @CacheEvict(cacheNames = CACHE_BASE_DATA_BY_TYPE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void updateBaseData(BaseDataUpdateVO updateVO) {
         BaseData baseData = validateBaseDataExists(updateVO.getId());
@@ -101,6 +108,7 @@ public class BaseDataServiceImpl implements BaseDataService {
      * @param id 基础数据 ID
      */
     @Override
+    @CacheEvict(cacheNames = CACHE_BASE_DATA_BY_TYPE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void deleteBaseDataById(Long id) {
         validateBaseDataExists(id);
@@ -114,6 +122,7 @@ public class BaseDataServiceImpl implements BaseDataService {
      * @return 基础数据列表
      */
     @Override
+    @Cacheable(cacheNames = CACHE_BASE_DATA_BY_TYPE, key = "#typeCode")
     public List<BaseDataDetailVO> listBaseDataByTypeCode(String typeCode) {
         if (!StringUtils.hasText(typeCode)) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "数据类型编码不能为空");
