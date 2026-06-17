@@ -80,6 +80,6 @@
 
 ## 五、相关文档
 
-- 接口调试文档：`docs/接口调试文档.md`
+- 接口调试文档：`docs/接口调试文档.md`（含操作日志、基础数据全量 API）
 - AOP 测试文档：`docs/aop-test.md`
 - 缓存测试文档：`docs/cache-test.md`
