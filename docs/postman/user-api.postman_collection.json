@@ -30,6 +30,14 @@
     {
       "key": "operateLogId",
       "value": "1"
+    },
+    {
+      "key": "baseDataId",
+      "value": ""
+    },
+    {
+      "key": "typeCode",
+      "value": "user_status"
     }
   ],
   "item": [
@@ -573,6 +581,240 @@
               "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05-基础数据与缓存验证",
+      "description": "验证基础数据 CRUD、按类型查询及 Spring Cache。执行 03 时请观察服务端日志：第 2 次查询不应打印 SELECT sys_base_data。详见 docs/cache-test.md",
+      "item": [
+        {
+          "name": "01-登录-成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.environment.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "02-按类型查询-第1次(写入缓存)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('返回列表', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "pm.test('含 user_status 数据', function () {",
+                  "  pm.expect(json.data.length).to.be.at.least(1);",
+                  "  pm.expect(json.data[0].typeCode).to.eql('user_status');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/base-data/type/{{typeCode}}"
+          }
+        },
+        {
+          "name": "03-按类型查询-第2次(观察缓存)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('提示-观察服务端日志', function () {",
+                  "  console.log('第2次查询应命中 @Cacheable，服务端不应再打印 SELECT sys_base_data');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/base-data/type/{{typeCode}}"
+          }
+        },
+        {
+          "name": "04-新增基础数据",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('testDataCode', String(Date.now()).slice(-6));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('新增成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('返回新ID', function () { pm.expect(json.data).to.be.a('number'); });",
+                  "pm.collectionVariables.set('baseDataId', json.data);",
+                  "pm.environment.set('baseDataId', json.data);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeCode\": \"{{typeCode}}\",\n  \"dataCode\": \"{{testDataCode}}\",\n  \"dataName\": \"Postman缓存测试\",\n  \"sort\": 999\n}"
+            },
+            "url": "{{baseUrl}}/api/base-data"
+          }
+        },
+        {
+          "name": "05-按类型查询-新增后(缓存失效)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "var id = pm.collectionVariables.get('baseDataId');",
+                  "pm.test('含新增记录', function () {",
+                  "  var found = json.data.some(function (item) { return String(item.id) === String(id); });",
+                  "  pm.expect(found).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/base-data/type/{{typeCode}}"
+          }
+        },
+        {
+          "name": "06-修改基础数据",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('修改成功', function () { pm.expect(json.code).to.eql(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{baseDataId}},\n  \"dataName\": \"Postman缓存测试-已修改\",\n  \"sort\": 998\n}"
+            },
+            "url": "{{baseUrl}}/api/base-data"
+          }
+        },
+        {
+          "name": "07-删除基础数据",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('删除成功', function () { pm.expect(json.code).to.eql(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/base-data/{{baseDataId}}"
+          }
+        },
+        {
+          "name": "08-新增重复dataCode-应失败",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 400', function () { pm.expect(json.code).to.eql(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeCode\": \"user_status\",\n  \"dataCode\": \"1\",\n  \"dataName\": \"重复测试\",\n  \"sort\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/base-data"
+          }
+        },
+        {
+          "name": "09-删除不存在记录-应404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('业务码 404', function () { pm.expect(json.code).to.eql(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/base-data/99999"
           }
         }
       ]

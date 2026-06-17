@@ -17,6 +17,9 @@
 | 用户 | DELETE /api/users/batch | ✅ |
 | AOP | 用户接口触发自动写日志 | 见 `docs/aop-test.md` |
 | 操作日志 | GET /api/operate-logs/{id} | 见 `docs/aop-test.md` |
+| 基础数据 | POST/PUT/DELETE /api/base-data | 见 `docs/cache-test.md` |
+| 基础数据 | GET /api/base-data/type/{typeCode} | 见 `docs/cache-test.md` |
+| 缓存 | @Cacheable / @CacheEvict | 见 `docs/cache-test.md` |
 
 ## 二、边界测试用例
 
@@ -33,6 +36,9 @@
 | B09 | 删除不存在用户 | code=404 | 通过 |
 | B10 | 批量删除含不存在 ID | 部分成功，返回 failedIds | 通过 |
 | B11 | 批量删除空列表 | code=400 | 通过 |
+| B12 | 基础数据同类型重复 dataCode | code=400 | 通过 |
+| B13 | 删除不存在基础数据 | code=404 | 通过 |
+| B14 | 未登录访问基础数据接口 | HTTP 401 | 通过 |
 
 ## 三、Bug 清单（按优先级）
 
@@ -75,3 +81,5 @@
 ## 五、相关文档
 
 - 接口调试文档：`docs/接口调试文档.md`
+- AOP 测试文档：`docs/aop-test.md`
+- 缓存测试文档：`docs/cache-test.md`
