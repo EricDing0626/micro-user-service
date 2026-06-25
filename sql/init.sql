@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS sys_operate_log (
     create_time     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (id),
     KEY idx_operate_time (operate_time),
-    KEY idx_operator (operator)
+    KEY idx_operator (operator),
+    KEY idx_operator_operate_time (operator, operate_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
 
 -- 基础数据表

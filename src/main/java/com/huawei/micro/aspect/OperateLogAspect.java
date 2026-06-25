@@ -4,12 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.micro.entity.User;
 import com.huawei.micro.mapper.UserMapper;
-import com.huawei.micro.service.OperateLogService;
+import com.huawei.micro.service.OperateLogAsyncWriter;
+import com.huawei.micro.util.TokenResolver;
 import com.huawei.micro.util.TokenStore;
 import com.huawei.micro.vo.LoginVO;
 import com.huawei.micro.vo.OperateLogCreateVO;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -31,19 +31,15 @@ import java.util.List;
  * @author Eric
  * @since 1.0.0
  */
-@Slf4j
 @Aspect
 @Component
 @RequiredArgsConstructor
 public class OperateLogAspect {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String TOKEN_HEADER = "token";
-    private static final String BEARER_PREFIX = "Bearer ";
     private static final String UNKNOWN_OPERATOR = "anonymous";
     private static final int MAX_JSON_LENGTH = 4000;
 
-    private final OperateLogService operateLogService;
+    private final OperateLogAsyncWriter operateLogAsyncWriter;
     private final TokenStore tokenStore;
     private final UserMapper userMapper;
     private final ObjectMapper objectMapper;
@@ -88,18 +84,14 @@ public class OperateLogAspect {
 
     private void saveOperateLog(String operator, LocalDateTime operateTime, String requestPath,
                                 String requestMethod, String requestParams, String responseResult) {
-        try {
-            OperateLogCreateVO createVO = new OperateLogCreateVO();
-            createVO.setOperator(operator);
-            createVO.setOperateTime(operateTime);
-            createVO.setRequestPath(requestPath);
-            createVO.setRequestMethod(requestMethod);
-            createVO.setRequestParams(requestParams);
-            createVO.setResponseResult(responseResult);
-            operateLogService.createOperateLog(createVO);
-        } catch (Exception ex) {
-            log.warn("自动记录操作日志失败: path={}, method={}", requestPath, requestMethod, ex);
-        }
+        OperateLogCreateVO createVO = new OperateLogCreateVO();
+        createVO.setOperator(operator);
+        createVO.setOperateTime(operateTime);
+        createVO.setRequestPath(requestPath);
+        createVO.setRequestMethod(requestMethod);
+        createVO.setRequestParams(requestParams);
+        createVO.setResponseResult(responseResult);
+        operateLogAsyncWriter.writeOperateLogAsync(createVO);
     }
 
     private HttpServletRequest getCurrentRequest() {
@@ -113,7 +105,7 @@ public class OperateLogAspect {
 
     private String resolveOperator(HttpServletRequest request, Object[] args) {
         if (request != null) {
-            String token = resolveToken(request);
+            String token = TokenResolver.resolveToken(request);
             if (StringUtils.hasText(token)) {
                 Long userId = tokenStore.getUserId(token);
                 if (userId != null) {
@@ -135,14 +127,6 @@ public class OperateLogAspect {
             }
         }
         return UNKNOWN_OPERATOR;
-    }
-
-    private String resolveToken(HttpServletRequest request) {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
-            return authorization.substring(BEARER_PREFIX.length()).trim();
-        }
-        return request.getHeader(TOKEN_HEADER);
     }
 
     private String buildRequestParams(Object[] args) {

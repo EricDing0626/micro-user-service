@@ -13,6 +13,7 @@ import com.huawei.micro.mapper.UserMapper;
 import com.huawei.micro.mapper.UserRoleMapper;
 import com.huawei.micro.service.UserService;
 import com.huawei.micro.util.Md5Util;
+import com.huawei.micro.util.PageHelper;
 import com.huawei.micro.vo.PageResultVO;
 import com.huawei.micro.vo.UserBatchDeleteResultVO;
 import com.huawei.micro.vo.UserCreateVO;
@@ -96,11 +97,13 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public PageResultVO<UserDetailVO> listUsers(Integer pageNum, Integer pageSize, String username) {
-        int currentPageNum = normalizePageNum(pageNum);
-        int currentPageSize = normalizePageSize(pageSize);
+        int currentPageNum = PageHelper.normalizePageNum(pageNum, pageProperties);
+        int currentPageSize = PageHelper.normalizePageSize(pageSize, pageProperties);
 
         Page<User> page = new Page<>(currentPageNum, currentPageSize);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(User::getId, User::getUsername, User::getEmail, User::getPhone,
+                User::getStatus, User::getCreateTime, User::getUpdateTime);
         if (StringUtils.hasText(username)) {
             queryWrapper.like(User::getUsername, username);
         }
@@ -110,7 +113,7 @@ public class UserServiceImpl implements UserService {
         List<UserDetailVO> records = userPage.getRecords().stream()
                 .map(this::convertToUserDetailVO)
                 .collect(Collectors.toList());
-        return buildPageResult(userPage, records);
+        return PageHelper.buildPageResult(userPage, records);
     }
 
     /**
@@ -314,32 +317,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 规范化页码。
-     *
-     * @param pageNum 页码
-     * @return 有效页码
-     */
-    private int normalizePageNum(Integer pageNum) {
-        if (pageNum == null || pageNum < 1) {
-            return pageProperties.getDefaultPageNum();
-        }
-        return pageNum;
-    }
-
-    /**
-     * 规范化每页条数。
-     *
-     * @param pageSize 每页条数
-     * @return 有效每页条数
-     */
-    private int normalizePageSize(Integer pageSize) {
-        if (pageSize == null || pageSize < 1) {
-            return pageProperties.getDefaultPageSize();
-        }
-        return Math.min(pageSize, pageProperties.getMaxPageSize());
-    }
-
-    /**
      * 转换用户实体为详情 VO。
      *
      * @param user 用户实体
@@ -350,22 +327,5 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(user, detailVO);
         detailVO.setRoles(userMapper.selectRoleByUserId(user.getId()));
         return detailVO;
-    }
-
-    /**
-     * 构建分页结果。
-     *
-     * @param userPage 分页查询结果
-     * @param records  记录列表
-     * @return 分页 VO
-     */
-    private PageResultVO<UserDetailVO> buildPageResult(Page<User> userPage, List<UserDetailVO> records) {
-        PageResultVO<UserDetailVO> pageResult = new PageResultVO<>();
-        pageResult.setRecords(records);
-        pageResult.setTotal(userPage.getTotal());
-        pageResult.setPageNum(userPage.getCurrent());
-        pageResult.setPageSize(userPage.getSize());
-        pageResult.setPages(userPage.getPages());
-        return pageResult;
     }
 }

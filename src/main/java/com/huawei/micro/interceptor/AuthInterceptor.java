@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huawei.micro.common.Result;
 import com.huawei.micro.common.ResultCode;
 import com.huawei.micro.util.TokenStore;
+import com.huawei.micro.util.TokenResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -25,10 +26,6 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class AuthInterceptor implements HandlerInterceptor {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String TOKEN_HEADER = "token";
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final TokenStore tokenStore;
     private final ObjectMapper objectMapper;
 
@@ -44,26 +41,12 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws IOException {
-        String token = resolveToken(request);
+        String token = TokenResolver.resolveToken(request);
         if (!StringUtils.hasText(token) || tokenStore.getUserId(token) == null) {
             writeUnauthorized(response);
             return false;
         }
         return true;
-    }
-
-    /**
-     * 从请求头解析 token。
-     *
-     * @param request HTTP 请求
-     * @return token，未携带时返回 null
-     */
-    private String resolveToken(HttpServletRequest request) {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
-            return authorization.substring(BEARER_PREFIX.length()).trim();
-        }
-        return request.getHeader(TOKEN_HEADER);
     }
 
     /**
