@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "用户管理模块-全量测试",
-    "description": "micro-user-service 全量接口测试集合，含登录、CRUD、分页、批量删除及边界场景。\\n\\n使用步骤：\\n1. 导入 local.postman_environment.json 环境\\n2. 确保数据库已有可登录用户（或先执行 init.sql 中的测试用户插入语句）\\n3. 先执行「01-登录成功」获取 token\\n4. 再执行其余接口",
+    "description": "micro-user-service 全量接口测试集合，含认证、用户CRUD、AOP、基础数据、跨模块联调及操作日志全接口。\\n\\n使用步骤：\\n1. 导入 local.postman_environment.json\\n2. 启动服务并执行 init.sql\\n3. Collection Runner 运行全量或按文件夹执行\\n4. 结果记录见 docs/postman-test-report.md",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -41,6 +41,10 @@
     },
     {
       "key": "crossModuleUsername",
+      "value": ""
+    },
+    {
+      "key": "manualOperateLogId",
       "value": ""
     }
   ],
@@ -1038,6 +1042,126 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/operate-logs/{{operateLogId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07-操作日志全量接口",
+      "description": "覆盖操作日志 POST/GET recent/GET by id/DELETE 全 REST 接口",
+      "item": [
+        {
+          "name": "01-登录-成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.environment.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "02-手动新增操作日志",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('新增成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.collectionVariables.set('manualOperateLogId', json.data);",
+                  "pm.environment.set('manualOperateLogId', json.data);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"testadmin\",\n  \"requestPath\": \"/api/users\",\n  \"requestMethod\": \"POST\",\n  \"requestParams\": \"{\\\"username\\\":\\\"manual\\\"}\",\n  \"responseResult\": \"{\\\"code\\\":200}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/operate-logs"
+          }
+        },
+        {
+          "name": "03-查询最近操作日志",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('返回列表', function () { pm.expect(json.data).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/operate-logs/recent?operator=testadmin&limit=10"
+          }
+        },
+        {
+          "name": "04-按ID查询操作日志",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('操作人为testadmin', function () { pm.expect(json.data.operator).to.eql('testadmin'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/operate-logs/{{manualOperateLogId}}"
+          }
+        },
+        {
+          "name": "05-删除操作日志",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('删除成功', function () { pm.expect(json.code).to.eql(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/operate-logs/{{manualOperateLogId}}"
           }
         }
       ]

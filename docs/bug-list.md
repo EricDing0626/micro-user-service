@@ -87,3 +87,5 @@
 - 缓存测试文档：`docs/cache-test.md`
 - 跨模块联调报告：`docs/cross-module-test.md`
 - 性能优化报告：`docs/performance-optimization.md`
+- Postman 自动化报告：`docs/postman-test-report.md`
+- 交付总报告：`docs/integration-report.md`
