@@ -38,6 +38,10 @@
     {
       "key": "typeCode",
       "value": "user_status"
+    },
+    {
+      "key": "crossModuleUsername",
+      "value": ""
     }
   ],
   "item": [
@@ -815,6 +819,225 @@
           "request": {
             "method": "DELETE",
             "url": "{{baseUrl}}/api/base-data/99999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06-跨模块联调验证",
+      "description": "验证 登录→基础数据→用户CRUD→操作日志 全流程。详见 docs/cross-module-test.md",
+      "item": [
+        {
+          "name": "01-登录-成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('登录成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.environment.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testadmin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "02-查询部门类型-模拟下拉",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('含部门数据', function () {",
+                  "  pm.expect(json.data.length).to.be.at.least(1);",
+                  "  pm.expect(json.data[0].typeCode).to.eql('dept_type');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/base-data/type/dept_type"
+          }
+        },
+        {
+          "name": "03-查询用户状态-用于新增",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "var enabled = json.data.find(function (item) { return item.dataCode === '1'; });",
+                  "pm.test('含启用状态', function () { pm.expect(enabled).to.be.an('object'); });",
+                  "pm.collectionVariables.set('userStatusFromBaseData', enabled ? enabled.dataCode : '1');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/base-data/type/user_status"
+          }
+        },
+        {
+          "name": "04-新增用户-使用基础数据status",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var username = 'cross' + Date.now();",
+                  "pm.collectionVariables.set('crossModuleUsername', username);",
+                  "pm.environment.set('crossModuleUsername', username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('新增成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.collectionVariables.set('userId', json.data);",
+                  "pm.environment.set('userId', json.data);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{crossModuleUsername}}\",\n  \"password\": \"123456\",\n  \"status\": 1,\n  \"roleIds\": [2]\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "05-修改用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('修改成功', function () { pm.expect(json.code).to.eql(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{userId}},\n  \"email\": \"cross-module@test.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "06-删除用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('删除成功', function () { pm.expect(json.code).to.eql(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "07-查询最近操作日志-验证关联",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('返回日志列表', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "var logs = json.data;",
+                  "var methods = logs.map(function (item) { return item.requestMethod; });",
+                  "pm.test('含POST日志', function () { pm.expect(methods).to.include('POST'); });",
+                  "pm.test('含PUT日志', function () { pm.expect(methods).to.include('PUT'); });",
+                  "pm.test('含DELETE日志', function () { pm.expect(methods).to.include('DELETE'); });",
+                  "pm.test('操作人为testadmin', function () {",
+                  "  logs.forEach(function (item) { pm.expect(item.operator).to.eql('testadmin'); });",
+                  "});",
+                  "if (logs.length > 0) {",
+                  "  pm.collectionVariables.set('operateLogId', logs[0].id);",
+                  "  pm.environment.set('operateLogId', logs[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/operate-logs/recent?operator=testadmin&requestPathPrefix=/api/users&limit=20"
+          }
+        },
+        {
+          "name": "08-按ID查询操作日志",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('查询成功', function () { pm.expect(json.code).to.eql(200); });",
+                  "pm.test('操作人为testadmin', function () { pm.expect(json.data.operator).to.eql('testadmin'); });",
+                  "pm.test('含请求路径', function () { pm.expect(json.data.requestPath).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/operate-logs/{{operateLogId}}"
           }
         }
       ]

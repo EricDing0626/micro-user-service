@@ -20,6 +20,7 @@
 | 基础数据 | POST/PUT/DELETE /api/base-data | 见 `docs/cache-test.md` |
 | 基础数据 | GET /api/base-data/type/{typeCode} | 见 `docs/cache-test.md` |
 | 缓存 | @Cacheable / @CacheEvict | 见 `docs/cache-test.md` |
+| 跨模块 | 登录→用户CRUD→操作日志 | 见 `docs/cross-module-test.md` |
 
 ## 二、边界测试用例
 
@@ -83,3 +84,4 @@
 - 接口调试文档：`docs/接口调试文档.md`（含操作日志、基础数据全量 API）
 - AOP 测试文档：`docs/aop-test.md`
 - 缓存测试文档：`docs/cache-test.md`
+- 跨模块联调报告：`docs/cross-module-test.md`

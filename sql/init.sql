@@ -92,7 +92,10 @@ INSERT IGNORE INTO sys_base_data (type_code, data_code, data_name, sort, status)
 ('user_status', '0', '禁用', 1, 1),
 ('user_status', '1', '启用', 2, 1),
 ('role_type', 'ADMIN', '管理员', 1, 1),
-('role_type', 'USER', '普通用户', 2, 1);
+('role_type', 'USER', '普通用户', 2, 1),
+('dept_type', 'RD', '研发部', 1, 1),
+('dept_type', 'HR', '人力资源部', 2, 1),
+('dept_type', 'OPS', '运维部', 3, 1);
 
 -- ============================================================
 -- Navicat 测试用自定义 SQL（对应 Mapper 中的 selectUserByUsername / selectRoleByUserId）

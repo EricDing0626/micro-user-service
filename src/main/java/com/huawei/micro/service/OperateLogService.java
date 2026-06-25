@@ -3,6 +3,8 @@ package com.huawei.micro.service;
 import com.huawei.micro.vo.OperateLogCreateVO;
 import com.huawei.micro.vo.OperateLogDetailVO;
 
+import java.util.List;
+
 /**
  * 操作日志业务服务接口。
  *
@@ -33,4 +35,14 @@ public interface OperateLogService {
      * @param id 日志 ID
      */
     void deleteOperateLogById(Long id);
+
+    /**
+     * 查询最近的操作日志，用于联调验证。
+     *
+     * @param operator           操作人（可选）
+     * @param requestPathPrefix  请求路径前缀（可选）
+     * @param limit              返回条数上限
+     * @return 操作日志列表
+     */
+    List<OperateLogDetailVO> listRecentOperateLogs(String operator, String requestPathPrefix, Integer limit);
 }
